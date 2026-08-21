@@ -18,6 +18,7 @@ function GraphSvg({ path }: { path: any }) {
   const cx = (i: number) => 80 + i * 180
   const cy = (i: number) => h / 2
 
+  // map node internal id to index
   const idToIndex: Record<number, number> = {}
   nodes.forEach((n: any, i: number) => (idToIndex[n.id] = i))
 
@@ -63,9 +64,7 @@ function GraphSvg({ path }: { path: any }) {
   )
 }
 
-// PeerGraph removed: render peers as a normal list (avatars + shared skills)
-
-export default function Home() {
+export default function GraphPage() {
   const [mentors, setMentors] = useState<any>(null)
   const [peers, setPeers] = useState<any>(null)
   const [relation, setRelation] = useState<any>(null)
@@ -73,13 +72,6 @@ export default function Home() {
   const [bId, setBId] = useState("")
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
-
-  const [mentorsLoading, setMentorsLoading] = useState(false)
-  const [peersLoading, setPeersLoading] = useState(false)
-  const [relationLoading, setRelationLoading] = useState(false)
-  const [mentorsError, setMentorsError] = useState<string | null>(null)
-  const [peersError, setPeersError] = useState<string | null>(null)
-  const [relationError, setRelationError] = useState<string | null>(null)
 
   // create states
   const [personId, setPersonId] = useState("")
@@ -98,52 +90,38 @@ export default function Home() {
   }
 
   async function loadMentors() {
-    setMentorsLoading(true)
-    setMentorsError(null)
+    setLoading(true)
     try {
       const res = await fetch(buildUrl(`/mentors`))
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-      const data = await res.json()
-      setMentors(data)
-      if (!data || !data.mentors || data.mentors.length === 0) setMentors(null)
-    } catch (e: any) {
-      setMentorsError(String(e))
-      setMentors(null)
+      setMentors(await res.json())
+    } catch (e) {
+      setMentors({ error: String(e) })
     } finally {
-      setMentorsLoading(false)
+      setLoading(false)
     }
   }
 
   async function loadPeers() {
-    setPeersLoading(true)
-    setPeersError(null)
+    setLoading(true)
     try {
       const res = await fetch(buildUrl(`/peers`))
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-      const data = await res.json()
-      setPeers(data)
-      if (!data || (Array.isArray(data) && data.length === 0)) setPeers(null)
-    } catch (e: any) {
-      setPeersError(String(e))
-      setPeers(null)
+      setPeers(await res.json())
+    } catch (e) {
+      setPeers({ error: String(e) })
     } finally {
-      setPeersLoading(false)
+      setLoading(false)
     }
   }
 
   async function loadRelation() {
-    setRelationLoading(true)
-    setRelationError(null)
+    setLoading(true)
     try {
       const res = await fetch(buildUrl(`/relation/${encodeURIComponent(aId)}/${encodeURIComponent(bId)}`))
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-      const data = await res.json()
-      setRelation(data)
-    } catch (e: any) {
-      setRelationError(String(e))
-      setRelation(null)
+      setRelation(await res.json())
+    } catch (e) {
+      setRelation({ error: String(e) })
     } finally {
-      setRelationLoading(false)
+      setLoading(false)
     }
   }
 
@@ -205,14 +183,11 @@ export default function Home() {
         <section className="mb-6">
           <div className="flex items-center gap-3 mb-3">
             <h2 className="text-xl font-medium">Mentors</h2>
-            <button aria-label="Fetch mentors" className="ml-auto btn-primary px-3 py-1 rounded bg-indigo-600 text-white" onClick={loadMentors} disabled={mentorsLoading}>
-              {mentorsLoading ? <Spinner /> : "Fetch"}
+            <button className="ml-auto btn-primary px-3 py-1 rounded bg-indigo-600 text-white" onClick={loadMentors} disabled={loading}>
+              {loading ? "Loading…" : "Fetch"}
             </button>
           </div>
-          {mentorsError && <div className="text-sm text-red-600 mb-2">Error: {mentorsError}</div>}
-          {mentorsLoading ? (
-            <div className="p-4 bg-white border rounded"><Spinner label="Loading mentors…" /></div>
-          ) : mentors && mentors.mentors && mentors.mentors.length > 0 ? (
+          {mentors && mentors.mentors ? (
             <ul className="space-y-2">
               {mentors.mentors.map((m: any, i: number) => {
                 const p = extractNodeProps(m, "mentor")
@@ -225,80 +200,33 @@ export default function Home() {
               })}
             </ul>
           ) : (
-            <div className="p-4 bg-white border rounded text-sm text-gray-600">No mentors found. Click Fetch to load mentors.</div>
+            <JsonBox data={mentors ?? "Click Fetch to load mentors"} />
           )}
         </section>
 
         <section className="mb-6">
           <div className="flex items-center gap-3 mb-3">
             <h2 className="text-xl font-medium">Peers (shared skills)</h2>
-            <button aria-label="Fetch peers" className="ml-auto btn-primary px-3 py-1 rounded bg-indigo-600 text-white" onClick={loadPeers} disabled={peersLoading}>
-              {peersLoading ? <Spinner /> : "Fetch"}
+            <button className="ml-auto btn-primary px-3 py-1 rounded bg-indigo-600 text-white" onClick={loadPeers} disabled={loading}>
+              {loading ? "Loading…" : "Fetch"}
             </button>
           </div>
-          {peersError && <div className="text-sm text-red-600 mb-2">Error: {peersError}</div>}
-          {peersLoading ? (
-            <div className="p-4 bg-white border rounded"><Spinner label="Loading peers…" /></div>
-          ) : peers && peers.peer_pairs && peers.peer_pairs.length > 0 ? (
-            <ul className="space-y-3">
-              {peers.peer_pairs.map((pp: any, i: number) => {
-                const p1 = extractNodeProps(pp.person1, "person1")
-                const p2 = extractNodeProps(pp.person2, "person2")
-                const skills: string[] = pp.shared_skills || []
-                const avatar = (name: string | undefined) => (name ? name.charAt(0).toUpperCase() : "?")
-                return (
-                  <li key={i} className="p-4 bg-white border rounded flex items-center gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-medium">{avatar(p1.name || p1.id)}</div>
-                      <div>
-                        <div className="font-medium">{p1.name || p1.id}</div>
-                        <div className="text-sm text-gray-500">{p1.id}</div>
-                      </div>
-                    </div>
-
-                    <div className="text-gray-400 text-lg">↔</div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-medium">{avatar(p2.name || p2.id)}</div>
-                      <div>
-                        <div className="font-medium">{p2.name || p2.id}</div>
-                        <div className="text-sm text-gray-500">{p2.id}</div>
-                      </div>
-                    </div>
-
-                    <div className="ml-auto text-right">
-                      <div className="text-xs text-gray-500">Shared skills</div>
-                      <div className="flex gap-2 mt-1 flex-wrap justify-end">
-                        {skills.length > 0 ? skills.map((s, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">{s}</span>
-                        )) : <span className="text-sm text-gray-500">—</span>}
-                      </div>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          ) : (
-            <div className="p-4 bg-white border rounded text-sm text-gray-600">No peer pairs yet. Click Fetch to load peer pairs.</div>
-          )}
+          <JsonBox data={peers ?? "Click Fetch to load peer pairs"} />
         </section>
 
         <section className="mb-6">
           <h2 className="text-xl font-medium mb-3">Relation (shortest path)</h2>
           <div className="flex gap-2 mb-3">
-            <input value={aId} onChange={(e) => setAId(e.target.value)} placeholder="A id (e.g. alice)" className="flex-1 p-2 border rounded" disabled={relationLoading} />
-            <input value={bId} onChange={(e) => setBId(e.target.value)} placeholder="B id (e.g. dave)" className="flex-1 p-2 border rounded" disabled={relationLoading} />
-            <button aria-label="Fetch relation" className="px-3 py-1 rounded bg-indigo-600 text-white" onClick={loadRelation} disabled={relationLoading || !aId || !bId}>
-              {relationLoading ? <Spinner /> : "Fetch"}
+            <input value={aId} onChange={(e) => setAId(e.target.value)} placeholder="A id (e.g. alice)" className="flex-1 p-2 border rounded" />
+            <input value={bId} onChange={(e) => setBId(e.target.value)} placeholder="B id (e.g. dave)" className="flex-1 p-2 border rounded" />
+            <button className="px-3 py-1 rounded bg-indigo-600 text-white" onClick={loadRelation} disabled={loading || !aId || !bId}>
+              {loading ? "Loading…" : "Fetch"}
             </button>
           </div>
-          {relationError && <div className="text-sm text-red-600 mb-2">Error: {relationError}</div>}
-          {relationLoading ? (
-            <div className="p-4 bg-white border rounded"><Spinner label="Finding path…" /></div>
-          ) : relation && relation.relation && relation.relation[0] && relation.relation[0].path ? (
+          {relation && relation.relation && relation.relation[0] && relation.relation[0].path ? (
             <GraphSvg path={relation.relation[0].path} />
           ) : (
-            <div className="p-4 bg-white border rounded text-sm text-gray-600">No relation found. Try different ids and click Fetch.</div>
+            <JsonBox data={relation ?? "Enter two ids and click Fetch"} />
           )}
         </section>
 
@@ -347,19 +275,8 @@ export default function Home() {
           {msg && <div className="mt-3 text-sm">{msg}</div>}
         </section>
 
+        <p className="text-sm text-gray-600 mt-6">The UI calls the Python API at <code className="bg-gray-100 px-1 rounded">{base}</code>. Set <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_API_BASE</code> to change.</p>
       </div>
-    </div>
-  )
-}
-
-function Spinner({ label }: { label?: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <svg className="animate-spin h-5 w-5 text-indigo-600" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-      </svg>
-      {label && <span className="text-sm text-gray-700">{label}</span>}
     </div>
   )
 }

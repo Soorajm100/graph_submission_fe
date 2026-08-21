@@ -1,4 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Graph Explorer UI
+
+This project is a Next.js UI that interacts with a Python Graph API (Neo4j). It provides:
+
+- A Graph explorer UI (mentors, peers, shortest path visualization)
+- Forms to create people, skills, and relations
+- Configurable API base via `NEXT_PUBLIC_API_BASE`
+
+## Run locally
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Start your Python API (example):
+
+```bash
+# from your Python API folder
+# uvicorn main:app --reload --port 8000
+```
+
+3. (Optional) Set API base and run Next.js:
+
+```bash
+export NEXT_PUBLIC_API_BASE=http://localhost:8000
+npm run dev
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:NEXT_PUBLIC_API_BASE = "http://localhost:8000"
+npm run dev
+```
+
+Open `http://localhost:3000` to use the Graph Explorer.
+
+## UX notes
+
+- The UI shows per-section loading, empty, and error states.
+- Set `NEXT_PUBLIC_API_DOCS` to point to your API docs URL if you want the docs link to appear in the app.
+
+## Polishing suggestions
+
+- Add Pydantic validation & consistent JSON shapes on the Python side so the UI can assume normalized responses.
+- Host the Python API and point `NEXT_PUBLIC_API_BASE` to a hosted URL for a live demo.This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
 
